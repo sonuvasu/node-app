@@ -12,7 +12,10 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "test:coverage": {
-    "jest --coverage "
-  }  
+  {
+  "test": "jest",       // <-- Ensure this comma is here!
+    "coverage": "jest --coverage"
+  }
+  
+    
 }
