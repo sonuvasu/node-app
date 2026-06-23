@@ -35,13 +35,12 @@ jobs:
         uses: sonarsource/sonarqube-scan-github-action@master # or scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} #Omit if using sonar cloud
+          #SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} #Omit if using sonar cloud
 
       - name: Enforce SonarQube Quality Gate
         # uses: sonarsource/sonarqube-quality-gate-action@v1
         uses: sonarsource/sonarqube-quality-gate-action@master
-
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} #Omit if using sonar cloud
+          #SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} #Omit if using sonar cloud
