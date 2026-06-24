@@ -13,9 +13,6 @@
     "node": ">=18.0.0"
   },
   {
-  "test": "jest",       // <-- Ensure this comma is here!
-    "coverage": "jest --coverage"
+  "test:coverage": "jest --coverage --coverageReporters=lcov"
   }
-  
-    
 }
