@@ -4,8 +4,8 @@
   "description": "A basic Node.js Express application for GitHub",
   "main": "index.js",
   "scripts": {
-    "test:coverage": "jest --coverage --coverageReporters=lcov"
-    "start": "node index.js"
+    "start": "node index.js",
+    "test:coverage": "jest --coverage --coverageReporters=lcov"    
   },
   "dependencies": {
     "express": "^4.19.2"
