@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test:coverage": "jest --coverage --coverageReporters=lcov"    
+    "test:coverage": "npx jest --coverage --coverageReporters=lcov"    
   },
   "dependencies": {
     "express": "^4.19.2"
