@@ -4,6 +4,7 @@
   "description": "A basic Node.js Express application for GitHub",
   "main": "index.js",
   "scripts": {
+    "test:coverage": "jest --coverage --coverageReporters=lcov"
     "start": "node index.js"
   },
   "dependencies": {
@@ -11,8 +12,5 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  {
-  "test:coverage": "jest --coverage"
   }
 }
