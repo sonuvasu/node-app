@@ -43,3 +43,26 @@ jobs:
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+
+  # 2. Wait for the Quality Gate to compute (Forces the pipeline to sync)
+      - name: Wait for Sonar Quality Gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          #SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+      # 3. Request report metrics using the Web API
+      - name: Download Sonar Quality Report
+        run: |
+          curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+            "${{ secrets.SONAR_HOST_URL }}/api/measures/component?component=sonarcloudpydemo&metricKeys=bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density" \
+            -o sonar-report.json
+           
+      # 4. Save the downloaded report to your GitHub Actions run
+      - name: Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-quality-report
+          path: sonar-report.json
