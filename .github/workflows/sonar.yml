@@ -38,6 +38,23 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+      - name: Install jq via powershell
+        shell: powershell
+        run: |
+          # 1. Query the official GitHub API endpoint for jq releases
+          $response = Invoke-RestMethod -Uri "https://github.com"
+          
+          # 2. Filter the assets for the Windows 64-bit executable and expand the download URL
+          $latestUrl = $response.assets | Where-Object { $_.name -like "*win64.exe" } | Select-Object -ExpandProperty browser_download_url
+          
+          Write-Host "Found latest jq download URL: $latestUrl"
+          
+          # 3. Download the executable to the runner's temporary directory
+          Invoke-WebRequest -Uri $latestUrl -OutFile "$env:RUNNER_TEMP\jq.exe"
+          
+          # 4. Add the temporary directory to the GitHub Actions PATH environment variable
+          Add-Content -Path $env:GITHUB_PATH -Value "$env:RUNNER_TEMP"
+
       - name: Enforce SonarQube Quality Gate
         uses: sonarsource/sonarcloud-quality-gate-action@master
         timeout-minutes: 5
