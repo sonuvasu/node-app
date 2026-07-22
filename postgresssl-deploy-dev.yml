@@ -1,0 +1,92 @@
+#Here is the final, optimized GitHub Actions workflow explicitly designed for your development (dev) environment. It targets your active feature branch, tags the build specifically with :dev, uses your development database for migrations, and deploys directly to your Azure Web App development slot or instance.Save this file in your project as .github/workflows/deploy-dev.yml.
+#Development Environment CI/CD Workflow
+
+name: Deploy NestJS to Azure Web App (Development)
+
+on:
+  push:
+    branches:
+      - 'feature/invoice*' # Matches your current development branch from the screenshot
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_REGISTRY: ${{ secrets.ACR_NAME }}.azurecr.io
+  IMAGE_NAME: agentic-ap-platform-backend
+  AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_DEV_NAME }} # Your dedicated dev App Service
+
+jobs:
+  build-and-push-acr-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ env.AZURE_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.AZURE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.AZURE_REGISTRY }}/${{ env.IMAGE_NAME }}:dev
+
+  run-postgres-migrations-dev:
+    needs: build-and-push-acr-dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Runs schema updates against your isolated dev database before code rollout
+      - name: Execute PostgreSQL Dev Migrations
+        env:
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+          NODE_ENV: development
+        run: |
+          npm run build --if-present
+          npm run migration:run --if-present
+
+  deploy-to-azure-webapp-dev:
+    needs: run-postgres-migrations-dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Commands your development web app instance to pull the fresh :dev image tag
+      - name: Deploy Container to Azure Web App (Dev)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          images: '${{ env.AZURE_REGISTRY }}/${{ env.IMAGE_NAME }}:dev'
+
+
+#GitHub Repository Secrets for DevEnsure you have added these environment-specific secrets under Settings -> Secrets and variables -> Actions:DEV_DATABASE_URL: Connection string for your dev PostgreSQL database (e.g., postgres://dev_user:password@dev-host:5432/dev_db?sslmode=require).AZURE_WEBAPP_DEV_NAME: The specific name of your development Azure App Service.AZURE_CREDENTIALS: Service Principal JSON credentials generated via Azure CLI.ACR_NAME / ACR_USERNAME / ACR_PASSWORD: Your registry authentication details.
+#Environment File Isolation ReminderYour sidebar displays .env.dev. Ensure that your code inside src/config/db.config.ts relies on process.env.DATABASE_URL at runtime instead of hardcoding file imports, keeping your local configuration records entirely out of the container image build path.
