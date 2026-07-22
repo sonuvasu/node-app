@@ -18,13 +18,38 @@ env:
   AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_DEV_NAME }} # Your dedicated dev App Service
 
 jobs:
-  build-and-push-acr-dev:
+  validate-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Log in to Azure
+      - name: Setup Node.js runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Standard clean installation for CI/CD environments
+      - name: Install dependencies
+        run: npm ci
+
+      # 1. ESLint validation check step
+      - name: Run ESLint Code Analysis
+        run: npm run lint
+
+      # 2. Automated test suite execution step
+      - name: Run Test Suites
+        run: npm run test
+
+  build-and-push-acr-dev:
+    needs: validate-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure Portal
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -36,11 +61,11 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Dev Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile.dev  # Targets your development docker configuration
           push: true
           tags: |
             ${{ env.AZURE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
@@ -53,7 +78,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js runtime
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -62,7 +87,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Runs schema updates against your isolated dev database before code rollout
+      # Safe isolated schema migration runtime block
       - name: Execute PostgreSQL Dev Migrations
         env:
           DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
@@ -75,7 +100,7 @@ jobs:
     needs: run-postgres-migrations-dev
     runs-on: ubuntu-latest
     steps:
-      - name: Log in to Azure
+      - name: Log in to Azure Portal
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
