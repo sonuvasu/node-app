@@ -1,0 +1,16 @@
+- name: Download Sonar CNES Report Package
+  shell: powershell
+  run: |
+    curl.exe -v -u '${{ secrets.SONAR_TOKEN }}:' '${{ secrets.SONAR_HOST_URL }}/api/cnesreport/report?key=sonarreactjs' --output sonar-report-package.zip
+
+- name: Extract Report Package
+  shell: powershell
+  run: |
+    Expand-Archive -Path sonar-report-package.zip -DestinationPath .\sonar-extracted-report
+
+- name: Upload Report Artifact
+  uses: actions/upload-artifact@v4
+  with:
+    name: sonar-quality-report
+    # This uploads the entire folder containing the DOCX report, Excel sheets, and Markdown files
+    path: .\sonar-extracted-report\
